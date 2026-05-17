@@ -54,7 +54,7 @@ public class EnchantingHandler implements Listener {
         int radius = 4;
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
-                for (int y = 0; y <= 1; y++) {
+                for (int y = 0; y <= 2; y++) {
                     Block target = world.getBlockAt(
                             loc.getBlockX() + x,
                             loc.getBlockY() + y,
@@ -65,7 +65,9 @@ public class EnchantingHandler implements Listener {
                         bookshelfCount++;
                     } else if (target.getType() == Material.CHISELED_BOOKSHELF
                             && target.getState() instanceof ChiseledBookshelf shelf) {
-                        bookshelfCount++;
+                        if (shelf.getInventory().getContents().length == 6) {
+                            bookshelfCount++;
+                        }
                         for (ItemStack i : shelf.getInventory().getContents()) {
                             if (i == null) continue;
                             if (i.getItemMeta() instanceof EnchantmentStorageMeta meta) {
@@ -207,8 +209,6 @@ public class EnchantingHandler implements Listener {
 
     @EventHandler
     public void removeApplicationOnClose(InventoryCloseEvent event) {
-
-
         if (storedForApplication.get(event.getPlayer().getUniqueId()) == null) return;
         storedForApplication.remove(event.getPlayer().getUniqueId());
 
