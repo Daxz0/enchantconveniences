@@ -1,5 +1,6 @@
 package daxz.dev.enchantconveniences;
 
+import daxz.dev.enchantconveniences.Registry.EventRegister;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Enchantconveniences extends JavaPlugin {
@@ -10,6 +11,7 @@ public final class Enchantconveniences extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        EventRegister.registerEvents();
     }
 
     @Override
