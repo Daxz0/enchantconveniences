@@ -21,12 +21,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import javax.naming.Name;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -205,7 +207,18 @@ public class EnchantingHandler implements Listener {
 
     @EventHandler
     public void removeApplicationOnClose(InventoryCloseEvent event) {
+        NamespacedKey saveLapis = new NamespacedKey(Enchantconveniences.getInstance(), "tableLocs");
 
+        Location loc = event.getInventory().getLocation();
+        Chunk chunk = loc.getChunk();
+
+
+        if (event.getInventory() instanceof EnchantingInventory inv){
+            ItemStack lapis = inv.getSecondary();
+            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
+            pdc.set(saveLapis, PersistentDataType.STRING, (String) (loc.toString() + "-" + lapis.getAmount()));
+            inv.setSecondary(new ItemStack(Material.AIR));
+        }
         if (storedForApplication.get(event.getPlayer().getUniqueId()) == null) return;
         storedForApplication.remove(event.getPlayer().getUniqueId());
 
