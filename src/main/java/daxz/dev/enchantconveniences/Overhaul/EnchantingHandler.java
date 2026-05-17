@@ -1,17 +1,16 @@
 package daxz.dev.enchantconveniences.Overhaul;
 
+import daxz.dev.enchantconveniences.Enchantconveniences;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import io.papermc.paper.registry.set.RegistryKeySet;
 import io.papermc.paper.registry.set.RegistrySet;
+import it.unimi.dsi.fastutil.Hash;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Registry;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.enchantments.Enchantment;
@@ -21,9 +20,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -35,6 +37,7 @@ public class EnchantingHandler implements Listener {
             .getRegistry(RegistryKey.ENCHANTMENT);
 
     private Map<UUID, EnchantmentOffer[]> storedForApplication = new LinkedHashMap<>();
+    private Map<String, EnchantmentOffer[]> itemUUIDS = new HashMap<>();
 
 
     @EventHandler
@@ -43,6 +46,16 @@ public class EnchantingHandler implements Listener {
         ItemStack item = event.getItem();
         World world = loc.getWorld();
         Player player = event.getEnchanter();
+        NamespacedKey itemUUID = new NamespacedKey(Enchantconveniences.getInstance(), "itemUUID");
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        var offers = event.getOffers();
+
+        if (pdc.has(itemUUID, PersistentDataType.STRING)) {
+
+            offers = itemUUIDS.get(itemUUID.toString());
+            return;
+
+        }
 
         List<Enchantment> chiseledEnchantments = new ArrayList<>();
         int bookshelfCount = 0;
@@ -81,10 +94,10 @@ public class EnchantingHandler implements Listener {
         for (Enchantment enchant : applicableEnchants) {
             if (enchant == Enchantment.MENDING) {
                 if (chiseledEnchantments.contains(enchant)) {
-                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant)/100);
+                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant)/3);
                 }
             } else if (chiseledEnchantments.contains(enchant)) {
-                weighted.put(enchant, 1.0f + Collections.frequency(chiseledEnchantments, enchant)/30);
+                weighted.put(enchant, 1.0f + Collections.frequency(chiseledEnchantments, enchant)/2);
             } else {
                 weighted.put(enchant, 1.0f);
             }
@@ -93,7 +106,6 @@ public class EnchantingHandler implements Listener {
         List<Enchantment> eligiblePool = new ArrayList<>(weighted.keySet());
 
         int[] slotsXp = computeSlotLevels(bookshelfCount);
-        var offers = event.getOffers();
         Random random = new Random();
 
         for (int i = 0; i < Math.min(offers.length, slotsXp.length); i++) {
@@ -117,6 +129,11 @@ public class EnchantingHandler implements Listener {
             offers[i] = new EnchantmentOffer(choice, enchantLevel, xpLevel);
         }
         storedForApplication.put(player.getUniqueId(), offers);
+
+        UUID randomUUID = UUID.randomUUID();
+        pdc.set(itemUUID, PersistentDataType.STRING, randomUUID.toString());
+
+
 
 
 
@@ -189,17 +206,26 @@ public class EnchantingHandler implements Listener {
 
         EnchantmentOffer offer = storedForApplication.get(player.getUniqueId())[event.whichButton()];
         Random random = new Random();
-        int luckyBonus = (int) random.nextInt(0, offer.getCost()/10);
+        int luckyBonus = (int) random.nextInt(0, offer.getCost()/5);
 
         List<Enchantment> applicableEnchants = getApplicableEnchantments(item);
         event.getEnchantsToAdd().put(offer.getEnchantment(), offer.getEnchantmentLevel());
 
         for (int i = 0; i <= luckyBonus; i++) {
             Enchantment randomChoice = applicableEnchants.get(random.nextInt(applicableEnchants.size()));
-            event.getEnchantsToAdd().put(randomChoice, random.nextInt(1,randomChoice.getMaxLevel()));
+            event.getEnchantsToAdd().put(randomChoice, random.nextInt(randomChoice.getMaxLevel()));
         }
 
 
         storedForApplication.remove(player.getUniqueId());
+        itemUUIDS.remove(item.)
+    }
+
+    @EventHandler
+    public void removeApplicationOnClose(InventoryCloseEvent event) {
+
+        if (storedForApplication.get(event.getPlayer().getUniqueId()) == null) return;
+        storedForApplication.remove(event.getPlayer().getUniqueId());
+
     }
 }
