@@ -37,7 +37,6 @@ public class EnchantingHandler implements Listener {
             .getRegistry(RegistryKey.ENCHANTMENT);
 
     private Map<UUID, EnchantmentOffer[]> storedForApplication = new LinkedHashMap<>();
-    private Map<String, EnchantmentOffer[]> itemUUIDS = new HashMap<>();
 
 
     @EventHandler
@@ -46,16 +45,6 @@ public class EnchantingHandler implements Listener {
         ItemStack item = event.getItem();
         World world = loc.getWorld();
         Player player = event.getEnchanter();
-        NamespacedKey itemUUID = new NamespacedKey(Enchantconveniences.getInstance(), "itemUUID");
-        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
-        var offers = event.getOffers();
-
-        if (pdc.has(itemUUID, PersistentDataType.STRING)) {
-
-            offers = itemUUIDS.get(itemUUID.toString());
-            return;
-
-        }
 
         List<Enchantment> chiseledEnchantments = new ArrayList<>();
         int bookshelfCount = 0;
@@ -90,6 +79,7 @@ public class EnchantingHandler implements Listener {
 
         List<Enchantment> applicableEnchants = getApplicableEnchantments(item);
 
+        var offers = event.getOffers();
         Map<Enchantment, Float> weighted = new HashMap<>();
         for (Enchantment enchant : applicableEnchants) {
             if (enchant == Enchantment.MENDING) {
@@ -129,13 +119,6 @@ public class EnchantingHandler implements Listener {
             offers[i] = new EnchantmentOffer(choice, enchantLevel, xpLevel);
         }
         storedForApplication.put(player.getUniqueId(), offers);
-
-        UUID randomUUID = UUID.randomUUID();
-        pdc.set(itemUUID, PersistentDataType.STRING, randomUUID.toString());
-
-
-
-
 
 
     }
@@ -218,7 +201,6 @@ public class EnchantingHandler implements Listener {
 
 
         storedForApplication.remove(player.getUniqueId());
-        itemUUIDS.remove(item.)
     }
 
     @EventHandler
