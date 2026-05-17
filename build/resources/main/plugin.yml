@@ -1,0 +1,7 @@
+name: enchantconveniences
+version: '1.0-RELEASE'
+
+main: daxz.dev.enchantconveniences.Enchantconveniences
+bootstrapper: daxz.dev.enchantconveniences.EnchantconveniencesBootstrap
+api-version: '26.1.2'
+load: POSTWORLD

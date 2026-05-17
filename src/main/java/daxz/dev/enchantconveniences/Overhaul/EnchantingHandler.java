@@ -88,7 +88,7 @@ public class EnchantingHandler implements Listener {
         for (Enchantment enchant : applicableEnchants) {
             if (enchant == Enchantment.MENDING) {
                 if (chiseledEnchantments.contains(enchant)) {
-                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant)/3);
+                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant)/5);
                 }
             } else if (chiseledEnchantments.contains(enchant)) {
                 weighted.put(enchant, 1.0f + Collections.frequency(chiseledEnchantments, enchant)/2);
