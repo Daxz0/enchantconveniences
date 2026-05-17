@@ -207,18 +207,8 @@ public class EnchantingHandler implements Listener {
 
     @EventHandler
     public void removeApplicationOnClose(InventoryCloseEvent event) {
-        NamespacedKey saveLapis = new NamespacedKey(Enchantconveniences.getInstance(), "tableLocs");
-
-        Location loc = event.getInventory().getLocation();
-        Chunk chunk = loc.getChunk();
 
 
-        if (event.getInventory() instanceof EnchantingInventory inv){
-            ItemStack lapis = inv.getSecondary();
-            PersistentDataContainer pdc = chunk.getPersistentDataContainer();
-            pdc.set(saveLapis, PersistentDataType.STRING, (String) (loc.toString() + "-" + lapis.getAmount()));
-            inv.setSecondary(new ItemStack(Material.AIR));
-        }
         if (storedForApplication.get(event.getPlayer().getUniqueId()) == null) return;
         storedForApplication.remove(event.getPlayer().getUniqueId());
 
