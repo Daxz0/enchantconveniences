@@ -7,6 +7,7 @@ import io.papermc.paper.registry.set.RegistryKeySet;
 import io.papermc.paper.registry.set.RegistrySet;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Registry;
@@ -18,17 +19,24 @@ import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class EnchantingHandler implements Listener {
 
     private final Registry<Enchantment> enchantmentRegistry = RegistryAccess
             .registryAccess()
             .getRegistry(RegistryKey.ENCHANTMENT);
+
+    private Map<UUID, EnchantmentOffer[]> storedForApplication = new LinkedHashMap<>();
+
+
     @EventHandler
     public void preparesEnchant(PrepareItemEnchantEvent event) {
         Location loc = event.getEnchantBlock().getLocation();
@@ -55,10 +63,9 @@ public class EnchantingHandler implements Listener {
                             && target.getState() instanceof ChiseledBookshelf shelf) {
                         bookshelfCount++;
                         for (ItemStack i : shelf.getInventory().getContents()) {
-                            if (i != null && i.getType() == Material.ENCHANTED_BOOK) {
-                                chiseledEnchantments.addAll(
-                                        i.getItemMeta().getEnchants().keySet()
-                                );
+                            if (i == null) continue;
+                            if (i.getItemMeta() instanceof EnchantmentStorageMeta meta) {
+                                chiseledEnchantments.addAll(meta.getStoredEnchants().keySet());
                             }
                         }
                     }
@@ -74,17 +81,15 @@ public class EnchantingHandler implements Listener {
         for (Enchantment enchant : applicableEnchants) {
             if (enchant == Enchantment.MENDING) {
                 if (chiseledEnchantments.contains(enchant)) {
-                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant) * 2);
+                    weighted.put(enchant, (float) Collections.frequency(chiseledEnchantments, enchant)/100);
                 }
             } else if (chiseledEnchantments.contains(enchant)) {
-                weighted.put(enchant, 1.0f + Collections.frequency(chiseledEnchantments, enchant));
-                player.sendMessage(Component.text(weighted.get(enchant)));
+                weighted.put(enchant, 1.0f + Collections.frequency(chiseledEnchantments, enchant)/30);
             } else {
                 weighted.put(enchant, 1.0f);
             }
         }
 
-        // Re-derive applicable list from weight map (respects mending exclusion)
         List<Enchantment> eligiblePool = new ArrayList<>(weighted.keySet());
 
         int[] slotsXp = computeSlotLevels(bookshelfCount);
@@ -111,6 +116,7 @@ public class EnchantingHandler implements Listener {
 
             offers[i] = new EnchantmentOffer(choice, enchantLevel, xpLevel);
         }
+        storedForApplication.put(player.getUniqueId(), offers);
 
 
 
@@ -173,4 +179,24 @@ public class EnchantingHandler implements Listener {
         return applicable;
     }
 
+    @EventHandler
+    public void applyEnchants(EnchantItemEvent event) {
+
+        Player player = event.getEnchanter();
+        event.getEnchantsToAdd().clear();
+        if (storedForApplication.get(player.getUniqueId()) == null) return;
+
+        EnchantmentOffer offer = storedForApplication.get(player.getUniqueId())[event.whichButton()];
+        Random random = new Random();
+        int luckyBonus = (int) random.nextInt(0, offer.getCost()/10);
+
+        event.getEnchantsToAdd().put(offer.getEnchantment(), offer.getEnchantmentLevel());
+
+        for (int i = 0; i <= luckyBonus; i++) {
+            event.getEnchantsToAdd().put(offer.getEnchantment(), offer.getEnchantmentLevel());
+        }
+
+
+        storedForApplication.remove(player.getUniqueId());
+    }
 }
