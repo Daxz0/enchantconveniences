@@ -183,6 +183,7 @@ public class EnchantingHandler implements Listener {
     public void applyEnchants(EnchantItemEvent event) {
 
         Player player = event.getEnchanter();
+        ItemStack item = event.getItem();
         event.getEnchantsToAdd().clear();
         if (storedForApplication.get(player.getUniqueId()) == null) return;
 
@@ -190,10 +191,12 @@ public class EnchantingHandler implements Listener {
         Random random = new Random();
         int luckyBonus = (int) random.nextInt(0, offer.getCost()/10);
 
+        List<Enchantment> applicableEnchants = getApplicableEnchantments(item);
         event.getEnchantsToAdd().put(offer.getEnchantment(), offer.getEnchantmentLevel());
 
         for (int i = 0; i <= luckyBonus; i++) {
-            event.getEnchantsToAdd().put(offer.getEnchantment(), offer.getEnchantmentLevel());
+            Enchantment randomChoice = applicableEnchants.get(random.nextInt(applicableEnchants.size()));
+            event.getEnchantsToAdd().put(randomChoice, random.nextInt(1,randomChoice.getMaxLevel()));
         }
 
 
